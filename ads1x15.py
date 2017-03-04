@@ -35,15 +35,15 @@ _MODE_MASK = const(0x0100)
 _MODE_CONTIN = const(0x0000)  # Continuous conversion mode
 _MODE_SINGLE = const(0x0100)  # Power-down single-shot mode (default)
 
-_DR_MASK = const(0x00E0)    # Values ADS1015/ADS1115
-_DR_128SPS = const(0x0000)  # 128/8 samples per second
-_DR_250SPS = const(0x0020)  # 250/16 samples per second
-_DR_490SPS = const(0x0040)  # 490/32 samples per second
-_DR_920SPS = const(0x0060)  # 920/64 samples per second
+_DR_MASK = const(0x00E0)     # Values ADS1015/ADS1115
+_DR_128SPS = const(0x0000)   # 128 /8 samples per second
+_DR_250SPS = const(0x0020)   # 250 /16 samples per second
+_DR_490SPS = const(0x0040)   # 490 /32 samples per second
+_DR_920SPS = const(0x0060)   # 920 /64 samples per second
 _DR_1600SPS = const(0x0080)  # 1600/128 samples per second (default)
 _DR_2400SPS = const(0x00A0)  # 2400/250 samples per second
 _DR_3300SPS = const(0x00C0)  # 3300/475 samples per second
-_DR_860SPS  = const(0x00E0)  # - /860 samples per Second
+_DR_860SPS  = const(0x00E0)  # -   /860 samples per Second
 
 _CMODE_MASK = const(0x0010)
 _CMODE_TRAD = const(0x0000)  # Traditional comparator with hysteresis (default)
@@ -79,76 +79,96 @@ _DIFFS = {
     (2, 3): _MUX_DIFF_2_3,
 }
 
+_RATES = (
+    _DR_128SPS,  # 128/8 samples per second
+    _DR_250SPS,  # 250/16 samples per second
+    _DR_490SPS,  # 490/32 samples per second
+    _DR_920SPS,  # 920/64 samples per second
+    _DR_1600SPS, # 1600/128 samples per second (default)
+    _DR_2400SPS, # 2400/250 samples per second
+    _DR_3300SPS, # 3300/475 samples per second
+    _DR_860SPS   # - /860 samples per Second
+)
+
 
 class ADS1115:
     def __init__(self, i2c, address=0x49, gain=0):
         self.i2c = i2c
         self.address = address
-        self.gain = gain # 2/3 6.144V
-        self.temp = bytearray(2)
+        self.gain = gain #
+        self.temp1 = bytearray(1)
+        self.temp2 = bytearray(2)
+        self.temp3 = bytearray(3)
 
     def _write_register(self, register, value):
-        data = ustruct.pack('>BH', register, value)
-        self.i2c.writeto(self.address, data)
+        self.temp3[0] = register
+        self.temp3[1] = value >> 8
+        self.temp3[2] = value & 0xff
+        self.i2c.writeto(self.address, self.temp3)
 
     def _read_register(self, register):
-        self.temp[0] = self.address << 1
-        self.temp[1] = register
-        self.i2c.start()
-        self.i2c.write(self.temp)
-        self.i2c.readfrom_into(self.address, self.temp)
-        return (self.temp[0] << 8) | self.temp[1]
+        self.temp1[0] = register
+        self.i2c.writeto(self.address, self.temp1)
+        self.i2c.readfrom_into(self.address, self.temp2)
+        return (self.temp2[0] << 8) | self.temp2[1]
 
     def set_conv(self, channel, rate):
-        """Read voltage between a channel and GND. Takes 1ms/10ms."""
+        """Read voltage between a channel and GND. Time depends on conversion rate."""
         self.mode = (_CQUE_NONE | _CLAT_NONLAT |
-            _CPOL_ACTVLOW | _CMODE_TRAD | rate | _MODE_SINGLE |
+            _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] | _MODE_SINGLE |
             _OS_SINGLE | _GAINS[self.gain] | _CHANNELS[channel])
 
-    def read(self, channel):
-        """Read voltage between a channel and GND. Takes 1ms/10ms."""
-        self._write_register(_REGISTER_CONFIG, self.mode)
+    def read(self, channel, rate):
+        """Read voltage between a channel and GND.  Time depends on conversion rate."""
+        self._write_register(_REGISTER_CONFIG, (_CQUE_NONE | _CLAT_NONLAT |
+            _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] | _MODE_SINGLE |
+            _OS_SINGLE | _GAINS[self.gain] | _CHANNELS[channel]))
         while not self._read_register(_REGISTER_CONFIG) & _OS_NOTBUSY:
             time.sleep_ms(1)
         return self._read_register(_REGISTER_CONVERT)
 
-    @micropython.native
-    def read_inv(self):
+    def read_rev(self):
         """Read voltage between a channel and GND. and then start the next conversion."""
         res = self._read_register(_REGISTER_CONVERT)
         self._write_register(_REGISTER_CONFIG, self.mode)
         return res
 
-    def diff(self, channel1, channel2):
+    def diff(self, channel1, channel2, rate):
         """Read voltage between two channels. Takes 1ms/10ms."""
         self._write_register(_REGISTER_CONFIG, _CQUE_NONE | _CLAT_NONLAT |
-            _CPOL_ACTVLOW | _CMODE_TRAD | _DR_2400SPS | _MODE_SINGLE |
+            _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] | _MODE_SINGLE |
             _OS_SINGLE | _GAINS[self.gain] | _DIFFS[(channel1, channel2)])
         while not self._read_register(_REGISTER_CONFIG) & _OS_NOTBUSY:
             time.sleep_ms(1)
         return self._read_register(_REGISTER_CONVERT)
 
-    def alert_start(self, channel, rate, threshold = 0x8000):
+    def alert_start(self, channel, rate, threshold_high = 0x4000):
         """Start continuous measurement, set ALERT pin on threshold."""
+        self._write_register(_REGISTER_HITHRESH, threshold_high)
+        self._write_register(_REGISTER_CONFIG, _CQUE_1CONV | _CLAT_LATCH |
+            _CPOL_ACTVLOW | _CMODE_TRAD |  _RATES[rate] |
+            _MODE_CONTIN | _GAINS[self.gain] | _CHANNELS[channel])
+
+    def conversion_start(self, channel, rate):
+        """Start continuous measurement, trigegr on ALERT/RDY pin."""
         self._write_register(_REGISTER_LOWTHRESH, 0)
-        self._write_register(_REGISTER_HITHRESH, threshold)
+        self._write_register(_REGISTER_HITHRESH, 0x8000)
         self._write_register(_REGISTER_CONFIG, _CQUE_1CONV | _CLAT_NONLAT |
-            _CPOL_ACTVLOW | _CMODE_TRAD | rate |
+            _CPOL_ACTVLOW | _CMODE_TRAD |  _RATES[rate] |
             _MODE_CONTIN | _GAINS[self.gain] | _CHANNELS[channel])
 
     def alert_read(self):
         """Get the last reading from the continuous measurement."""
         return self._read_register(_REGISTER_CONVERT)
 
-
 class ADS1015(ADS1115):
     def __init__(self, i2c, address=0x48):
         return super().__init__(i2c, address)
 
-    def read(self, channel):
+    def read(self, channel, rate):
         return super().read(channel) >> 4
 
-    def diff(self, channel1, channel2):
+    def diff(self, channel1, channel2, rate):
         return super().diff(channel1, channel2) >> 4
 
     def alert_start(self, channel, threshold):
