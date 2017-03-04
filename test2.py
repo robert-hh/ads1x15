@@ -18,7 +18,7 @@ def sample(x):
     irq_busy = True
     if index_put < _BUFFERSIZE:
         timestamp[index_put] = ticks_us()
-        data[index_put] = ads.alert_read()
+        data[index_put] = ads.read_rev()
         index_put += 1
     irq_busy = False
 
