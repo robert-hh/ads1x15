@@ -22,7 +22,7 @@ index_put = 0
 i2c = I2C(scl=Pin(5), sda=Pin(4), freq=400000)
 irq_pin = Pin(13, Pin.IN, Pin.PULL_UP)
 ads = ads1x15.ADS1115(i2c, addr, gain)
-ads.conversion_start(0, 5)
+ads.set_conv(0, 5)
 
 irq_pin.irq(trigger=Pin.IRQ_FALLING, handler=sample_auto)
 
