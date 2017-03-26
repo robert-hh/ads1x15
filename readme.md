@@ -43,10 +43,10 @@ table. It defines the full range of the ADC.  Acceptable values are:
 
 ### adc.read()
 ```
-value = adc.read(channel, rate)
+value = adc.read(rate, channel1[, channel2])
 ```
 Start a conversion on channel at speed rate and return the value.
-Channel is the single input channel (0 .. 3), rate is the conversion rate. Suitable values are  (ADS1015 / ADS1115):
+Channel1 is the single input channel (0 .. 3). If channel2 is supplied, the difference between channel1 and channel2 is taken. Rate is the conversion rate. Suitable values are  (ADS1015 / ADS1115):
 ```
 0 :  128/8 samples per second
 1 :  250/16 samples per second
@@ -61,29 +61,15 @@ The first value applies to the ADS1015, the second to the ADS1115. The time
 required for a single conversion is 1/samples\_per\_second plus the time needed for communication with the ADC, which is about 1 ms on an esp8266 at 80 MHz. Slower conversion yiled in a less noisy result. The data sheet figures of the ads1x15
 are given for the slowest sample rate.
 
-### adc.diff()
-
-```
-value = adc.diff(channel1, channel2, rate)
-```
-Start a conversion for the difference between channel 1 and channel 2 at sampling
-speed rate. Suitable values for channel 1 and channel 2 are:
-```
-0, 1  Difference between channel 0 and 1
-0, 3  Difference between channel 0 and 3
-1, 3  Difference between channel 1 and 3
-2, 3  Difference between channel 2 and 3
-```
-
 ###  adc.set_conv and adc.read_rev()
 
 Pair of methods for a time optimized sequential reading triggered by a time. For using, you would first set the conersion parameters with set_conv() and then get
 the values in a timer callback function with read_rev().
 ```
-adc.set_con(channel, rate)
+adc.set_con(rate, channel1[, channel2])
 value = adc.read_rev()
 ```
-The definition of channel and rate are the same as with adc.read(). The methods
+The definition of channel1, channel2 and rate are the same as with adc.read(). The methods
 read_rev() reads first the last conversion value back, and the starts a new
 conversion. Care has to be taken, that the time needed for conversion and
 communication is shorter than the timer period plus the time needed to process the data.
@@ -96,10 +82,10 @@ it's own issues.
 Pair of methods to start a contious sampling on a single channel and trigger
 an alert once a certain threshold is reached,
 ```
-adc.alert_start(channel, rate, threshold)
+adc.alert_start(rate, channel1[, channel2][, threshold])
 value = adc.alert_read()
 ```
-The values of channel and rate are the same as for adc.read(). Threshold tells
+The values of channel1, channel2 and rate are the same as for adc.read(). Threshold tells
 trigger value anshould be within the range of the adc, 0..32767 for ADC1115 and
 0..2047 for ADS1015. Rate should be chosen according to the input signal
 change rate and the precision needed.
@@ -110,10 +96,10 @@ change rate and the precision needed.
 Pair of methods to start a contious sampling on a single channel and trigger
 an alert at every sample. This functions pair to be used in an irq-based set-up.
 ```
-adc.conversion_start(channel, rate)
+adc.conversion_start(rate, channel1 [, channel2])
 value = adc.alert_read()
 ```
-The values of channel and rate are the same as for adc.read(). The timing jitter
+The values of channel1, channel2 and rate are the same as for adc.read(). The timing jitter
 observed is a few µs. However the ADC's timer is not very precise. In
 applications where this is of importance some control and calibration of
 the returned timing pattern has to be done.
@@ -182,7 +168,7 @@ i2c = I2C(scl=Pin(5), sda=Pin(4), freq=400000)
 ads = ads1x15.ADS1115(i2c, addr, gain)
 # set the conversion rate tp 860 SPS = 1.16 ms; that leaves about
 # 3 ms time for processing the data with a 5 ms timer
-ads.set_conv(0, 7) # start the first conversion
+ads.set_conv(7, 0) # start the first conversion
 ads.read_rev()
 sleep_ms(ADC_RATE)
 tim = Timer(-1)
@@ -227,7 +213,7 @@ index_put = 0
 i2c = I2C(scl=Pin(5), sda=Pin(4), freq=400000)
 irq_pin = Pin(13, Pin.IN, Pin.PULL_UP)
 ads = ads1x15.ADS1115(i2c, addr, gain)
-ads.conversion_start(0, 5)
+ads.conversion_start(5, 0)
 
 irq_pin.irq(trigger=Pin.IRQ_FALLING, handler=sample_auto)
 
