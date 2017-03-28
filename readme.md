@@ -1,9 +1,10 @@
-# Driver for the ADS1015/ADS1115 Analog-Digital Converter
+﻿# Driver for the ADS1015/ADS1115 Analogue-Digital Converter
 
 This driver consists mostly of the work of Radomir Dopieralski (@deshipu).
 I added a few functions and changed the existing ones so it matches better
-my needs for a project. Espcially were the functions time-optimized and made
-IRQ-proof (no allocation of RAM in the IRQ-prone methods). It was tested with ESP8266 Micropython
+my needs for a project. Especially were the functions time-optimized and made
+IRQ-proof (no allocation of RAM in the IRQ-prone methods). It was tested with 
+ESP8266 Micropython
 
 ## Features
 
@@ -13,13 +14,14 @@ Control the operation of the ADS1x15 ADC and read back the data
 
 The ADS1X15 use a I2C interface. So SCL and SDA have to be connected as minimum.
 If in continuous mode the CPU shall be triggered, the ALERT/RDY pin has to be
-connected too, and obviously VDD, GND and the analog input(2). You might also set the address pin to low (address = 72) or high (address = 73).
+connected too, and obviously VDD, GND and the analogue input(2). You might also 
+set the address pin to low (address = 72) or high (address = 73).
 
 
 ## Class
 
 The driver contains the ADS1115 class and the derived ADS1015 class. Since the
-two deviecs only differ by the conversion size, the same methods can be applied,
+two devices only differ by the conversion size, the same methods can be applied,
 with different interpretation of the parameters.
 ```
 adc = ADS1115(i2c, address, gain)
@@ -46,7 +48,9 @@ table. It defines the full range of the ADC.  Acceptable values are:
 value = adc.read(rate, channel1[, channel2])
 ```
 Start a conversion on channel at speed rate and return the value.
-Channel1 is the single input channel (0 .. 3). If channel2 is supplied, the difference between channel1 and channel2 is taken. Rate is the conversion rate. Suitable values are  (ADS1015 / ADS1115):
+Channel1 is the single input channel (0 .. 3). If channel2 is supplied, 
+the difference between channel1 and channel2 is taken. Rate is the 
+conversion rate. Suitable values are (ADS1015 / ADS1115):
 ```
 0 :  128/8 samples per second
 1 :  250/16 samples per second
@@ -58,12 +62,15 @@ Channel1 is the single input channel (0 .. 3). If channel2 is supplied, the diff
 7 :  - /860 samples per Second
 ```
 The first value applies to the ADS1015, the second to the ADS1115. The time
-required for a single conversion is 1/samples\_per\_second plus the time needed for communication with the ADC, which is about 1 ms on an esp8266 at 80 MHz. Slower conversion yiled in a less noisy result. The data sheet figures of the ads1x15
-are given for the slowest sample rate.
+required for a single conversion is 1/samples\_per\_second plus the time 
+needed for communication with the ADC, which is about 1 ms on an esp8266 
+at 80 MHz. Slower conversion yields in a less noisy result. 
+The data sheet figures of the ads1x15 are given for the slowest sample rate.
 
 ###  adc.set_conv and adc.read_rev()
 
-Pair of methods for a time optimized sequential reading triggered by a time. For using, you would first set the conersion parameters with set_conv() and then get
+Pair of methods for a time optimized sequential reading triggered by a time. 
+For using, you would first set the conversion parameters with set_conv() and then get
 the values in a timer callback function with read_rev().
 ```
 adc.set_con(rate, channel1[, channel2])
@@ -79,28 +86,28 @@ it's own issues.
 
 ###  adc.alert_start() and adc.alert_read()
 
-Pair of methods to start a contious sampling on a single channel and trigger
+Pair of methods to start a continuous sampling on a single channel and trigger
 an alert once a certain threshold is reached,
 ```
 adc.alert_start(rate, channel1[, channel2][, threshold])
 value = adc.alert_read()
 ```
 The values of channel1, channel2 and rate are the same as for adc.read(). Threshold tells
-trigger value anshould be within the range of the adc, 0..32767 for ADC1115 and
+trigger value and should be within the range of the ADC, 0..32767 for ADC1115 and
 0..2047 for ADS1015. Rate should be chosen according to the input signal
 change rate and the precision needed.
 
 
 ###  adc.conversion_start() and adc.alert_read()
 
-Pair of methods to start a contious sampling on a single channel and trigger
-an alert at every sample. This functions pair to be used in an irq-based set-up.
+Pair of methods to start a continuous sampling on a single channel and trigger
+an alert at every sample. This function pair is provided for an IRQ-based set-up.
 ```
 adc.conversion_start(rate, channel1 [, channel2])
 value = adc.alert_read()
 ```
 The values of channel1, channel2 and rate are the same as for adc.read(). The timing jitter
-observed is a few µs. However the ADC's timer is not very precise. In
+seen is about 200 ns. However the ADC's timer is not very precise. In
 applications where this is of importance some control and calibration of
 the returned timing pattern has to be done.
 
@@ -126,7 +133,7 @@ value = adc._read_register(register, value)
 ```
 Register is the number of the register according to the data sheet, value a 16 bit
 quantity coded accordingly. Reading the conversion register returns the value of
-the most recent sampling. Bit 15 of the config register is set when a conversion
+the most recent sampling. Bit 15 of the configuration register is set when a conversion
 is finished.
 
 # Sample Code
@@ -143,8 +150,8 @@ gain = 1
 
 _BUFFERSIZE = const(512)
 #
-# Interrupt service routine zum messen
-# diese wird vom Timer-interrupt aktiviert
+# Interrupt service routine for data acquisition
+# called by a timer interrupt
 #
 def sample(x):
     global index_put, ads, irq_busy, data, timestamp
@@ -166,7 +173,7 @@ ADC_RATE = 5
 
 i2c = I2C(scl=Pin(5), sda=Pin(4), freq=400000)
 ads = ads1x15.ADS1115(i2c, addr, gain)
-# set the conversion rate tp 860 SPS = 1.16 ms; that leaves about
+# set the conversion rate to 860 SPS = 1.16 ms; that leaves about
 # 3 ms time for processing the data with a 5 ms timer
 ads.set_conv(7, 0) # start the first conversion
 ads.read_rev()
@@ -183,8 +190,9 @@ tim.deinit()
 # timestamp the timer ticks which correlate to the conversion time
 #
 ```
-The timing jitter seen here was +/- 500 us, with 90% ~ 5 ms and 5% each at about 450 and 550 µs. The timing inteference occured every second. At 160MHz clock, the
-Jitter was about +/- 50 µs
+The timing jitter seen here was +/- 500 us, with 90% up to 50 µs and 5% 
+each at about 450 and 550 µs. The timing interference occurred every second.
+At 160MHz clock, the Jitter was about +/- 50 µs
 
 ## Continuous sampling trigged by the ADC
 
@@ -198,8 +206,8 @@ gain = 1
 
 _BUFFERSIZE = const(512)
 #
-# Interrupt service routine zum messen
-# diese wird vom Timer-interrupt aktiviert
+# Interrupt service routine for data acquisition
+# activated by a pin level interrupt
 #
 def sample_auto(x):
     global index_put, ads, data
@@ -225,5 +233,6 @@ irq_pin.irq(handler=None)
 # at that point data contains 512 samples acquired at the given rate
 #
 ```
-The sampling rate achieved in my test was 251,9 SPS or 3.97 ms/sample, as told
+The sampling rate achieved in my test was 251.9 SPS or 3.97 ms/sample, as told
 by the ESP8266 clock, which may not be precise either.
+
