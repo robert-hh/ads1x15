@@ -144,9 +144,9 @@ class ADS1115:
         
     def read(self, rate, channel1, channel2 = None):
         """Read voltage between a channel and GND.  Time depends on conversion rate."""
-        self.mode = (_CQUE_NONE | _CLAT_NONLAT |
+        self._write_register(_REGISTER_CONFIG, (_CQUE_NONE | _CLAT_NONLAT |
             _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] | _MODE_SINGLE |
-            _OS_SINGLE | _GAINS[self.gain] | _CHANNELS[(channel1, channel2)])
+            _OS_SINGLE | _GAINS[self.gain] | _CHANNELS[(channel1, channel2)]))
         while not self._read_register(_REGISTER_CONFIG) & _OS_NOTBUSY:
             time.sleep_ms(1)
         return self._read_register(_REGISTER_CONVERT)
@@ -165,7 +165,7 @@ class ADS1115:
             _MODE_CONTIN | _GAINS[self.gain] | _CHANNELS[(channel1, channel2)])
 
     def conversion_start(self, rate, channel1, channel2 = None):
-        """Start continuous measurement, trigegr on ALERT/RDY pin."""
+        """Start continuous measurement, trigger on ALERT/RDY pin."""
         self._write_register(_REGISTER_LOWTHRESH, 0)
         self._write_register(_REGISTER_HITHRESH, 0x8000)
         self._write_register(_REGISTER_CONFIG, _CQUE_1CONV | _CLAT_NONLAT |
