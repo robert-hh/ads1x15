@@ -137,7 +137,7 @@ class ADS1115:
         return (self.temp2[0] << 8) | self.temp2[1]
 
     def set_conv(self, rate, channel1, channel2 = None):
-        """Read voltage between a channel and GND. Time depends on conversion rate."""
+        """Set mode for read_rev"""
         self.mode = (_CQUE_NONE | _CLAT_NONLAT |
             _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] | _MODE_SINGLE |
             _OS_SINGLE | _GAINS[self.gain] | _CHANNELS[(channel1, channel2)])
@@ -159,6 +159,7 @@ class ADS1115:
 
     def alert_start(self, rate, channe1l, channel2 = None, threshold_high = 0x4000):
         """Start continuous measurement, set ALERT pin on threshold."""
+        self._write_register(_REGISTER_LOWTHRESH, 0)
         self._write_register(_REGISTER_HITHRESH, threshold_high)
         self._write_register(_REGISTER_CONFIG, _CQUE_1CONV | _CLAT_LATCH |
             _CPOL_ACTVLOW | _CMODE_TRAD |  _RATES[rate] |
