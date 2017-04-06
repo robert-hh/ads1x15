@@ -3,7 +3,7 @@
 This driver consists mostly of the work of Radomir Dopieralski (@deshipu).
 I added a few functions and changed the existing ones so it matches better
 my needs for a project. Especially were the functions time-optimized and made
-IRQ-proof (no allocation of RAM in the IRQ-prone methods). It was tested with 
+IRQ-proof (no allocation of RAM in the IRQ-prone methods). It was tested with
 ESP8266 Micropython
 
 ## Features
@@ -14,7 +14,7 @@ Control the operation of the ADS1x15 ADC and read back the data
 
 The ADS1X15 use a I2C interface. So SCL and SDA have to be connected as minimum.
 If in continuous mode the CPU shall be triggered, the ALERT/RDY pin has to be
-connected too, and obviously VDD, GND and the analogue input(2). You might also 
+connected too, and obviously VDD, GND and the analogue input(2). You might also
 set the address pin to low (address = 72) or high (address = 73).
 
 
@@ -30,7 +30,7 @@ or
 ```
 adc = ADS1015(i2c, address, gain)
 ```
-The default value for the address is 73, for gain is 0. Gain is an index into a
+The default value for the address is 72, for gain is 0. Gain is an index into a
 table. It defines the full range of the ADC.  Acceptable values are:
 ```
 0 : 6.144V # 2/3x
@@ -48,32 +48,32 @@ table. It defines the full range of the ADC.  Acceptable values are:
 value = adc.read(rate, channel1[, channel2])
 ```
 Start a conversion on channel at speed rate and return the value.
-Channel1 is the single input channel (0 .. 3). If channel2 is supplied, 
-the difference between channel1 and channel2 is taken. Rate is the 
+Channel1 is the single input channel (0 .. 3). If channel2 is supplied,
+the difference between channel1 and channel2 is taken. Rate is the
 conversion rate. Suitable values are (ADS1015 / ADS1115):
 ```
-0 :  128/8 samples per second
-1 :  250/16 samples per second
-2 :  490/32 samples per second
-3 :  920/64 samples per second
-4 :  1600/128 samples per second (default)
-5 :  2400/250 samples per second
-6 :  3300/475 samples per second
-7 :  - /860 samples per Second
+0 :  128/8      samples per second
+1 :  250/16     samples per second
+2 :  490/32     samples per second
+3 :  920/64     samples per second
+4 :  1600/128   samples per second (default)
+5 :  2400/250   samples per second
+6 :  3300/475   samples per second
+7 :  - /860     samples per Second
 ```
 The first value applies to the ADS1015, the second to the ADS1115. The time
-required for a single conversion is 1/samples\_per\_second plus the time 
-needed for communication with the ADC, which is about 1 ms on an esp8266 
-at 80 MHz. Slower conversion yields in a less noisy result. 
+required for a single conversion is 1/samples\_per\_second plus the time
+needed for communication with the ADC, which is about 1 ms on an esp8266
+at 80 MHz. Slower conversion yields in a less noisy result.
 The data sheet figures of the ads1x15 are given for the slowest sample rate.
 
 ###  adc.set_conv and adc.read_rev()
 
-Pair of methods for a time optimized sequential reading triggered by a time. 
+Pair of methods for a time optimized sequential reading triggered by a time.
 For using, you would first set the conversion parameters with set_conv() and then get
 the values in a timer callback function with read_rev().
 ```
-adc.set_con(rate, channel1[, channel2])
+adc.set_conv(rate, channel1[, channel2])
 value = adc.read_rev()
 ```
 The definition of channel1, channel2 and rate are the same as with adc.read(). The methods
@@ -87,15 +87,17 @@ it's own issues.
 ###  adc.alert_start() and adc.alert_read()
 
 Pair of methods to start a continuous sampling on a single channel and trigger
-an alert once a certain threshold is reached,
+an alert once a certain threshold is reached.
 ```
 adc.alert_start(rate, channel1[, channel2][, threshold])
 value = adc.alert_read()
 ```
-The values of channel1, channel2 and rate are the same as for adc.read(). Threshold tells
-trigger value and should be within the range of the ADC, 0..32767 for ADC1115 and
+The values of channel1, channel2 and rate are the same as for adc.read().
+Threshold tells upper value of the threshold register and should be within
+the range of the ADC, 0..32767 for ADC1115 and
 0..2047 for ADS1015. Rate should be chosen according to the input signal
-change rate and the precision needed.
+change rate and the precision needed. The mode set is the traditional
+comparator mode, with the lower threshold set to 0.
 
 
 ###  adc.conversion_start() and adc.alert_read()
@@ -106,9 +108,9 @@ an alert at every sample. This function pair is provided for an IRQ-based set-up
 adc.conversion_start(rate, channel1 [, channel2])
 value = adc.alert_read()
 ```
-The values of channel1, channel2 and rate are the same as for adc.read(). The timing jitter
-seen is about 200 ns. However the ADC's timer is not very precise. In
-applications where this is of importance some control and calibration of
+The values of channel1, channel2 and rate are the same as for adc.read().
+The timing jitter seen is about 200 ns. However the ADC's timer is not very
+precise. In applications where this is of importance some control and calibration of
 the returned timing pattern has to be done.
 
 ###  adc.\_write_register()
@@ -190,7 +192,7 @@ tim.deinit()
 # timestamp the timer ticks which correlate to the conversion time
 #
 ```
-The timing jitter seen here was +/- 500 us, with 90% up to 50 µs and 5% 
+The timing jitter seen here was +/- 500 us, with 90% up to 50 µs and 5%
 each at about 450 and 550 µs. The timing interference occurred every second.
 At 160MHz clock, the Jitter was about +/- 50 µs
 
@@ -235,4 +237,3 @@ irq_pin.irq(handler=None)
 ```
 The sampling rate achieved in my test was 251.9 SPS or 3.97 ms/sample, as told
 by the ESP8266 clock, which may not be precise either.
-
