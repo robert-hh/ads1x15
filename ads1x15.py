@@ -149,13 +149,14 @@ class ADS1115:
             _OS_SINGLE | _GAINS[self.gain] | _CHANNELS[(channel1, channel2)]))
         while not self._read_register(_REGISTER_CONFIG) & _OS_NOTBUSY:
             time.sleep_ms(1)
-        return self._read_register(_REGISTER_CONVERT)
+        res = self._read_register(_REGISTER_CONVERT)
+        return res if res < 32768 else 65536 - res
 
     def read_rev(self):
         """Read voltage between a channel and GND. and then start the next conversion."""
         res = self._read_register(_REGISTER_CONVERT)
         self._write_register(_REGISTER_CONFIG, self.mode)
-        return res
+        return res if res < 32768 else 65536 - res
 
     def alert_start(self, rate, channe1l, channel2 = None, threshold_high = 0x4000):
         """Start continuous measurement, set ALERT pin on threshold."""
