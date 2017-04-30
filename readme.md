@@ -66,6 +66,7 @@ required for a single conversion is 1/samples\_per\_second plus the time
 needed for communication with the ADC, which is about 1 ms on an esp8266
 at 80 MHz. Slower conversion yields in a less noisy result.
 The data sheet figures of the ads1x15 are given for the slowest sample rate.
+The value returned is a signed integer.
 
 ###  adc.set_conv and adc.read_rev()
 
@@ -83,6 +84,7 @@ communication is shorter than the timer period plus the time needed to process t
 A sample code is shown below. The timing jitter observed on an esp8266 was
 about 1 ms, but the time period is defined by the micro's timer, which has
 it's own issues.
+The value returned by read_rev is a signed integer.
 
 ###  adc.alert_start() and adc.alert_read()
 
@@ -98,7 +100,15 @@ the range of the ADC, 0..32767 for ADC1115 and
 0..2047 for ADS1015. Rate should be chosen according to the input signal
 change rate and the precision needed. The mode set is the traditional
 comparator mode, with the lower threshold set to 0.
-
+The value returned by alert_read is the raw register bitmap,
+not corrected for the sign.
+This correction has to be done by the script. In the script below this is
+achieved implicitely by storing the values into a signed halfword array.
+Otherwise, it may be done by:
+```
+value = adc.alread_read()
+if value > 32768:
+    value -= 65536```
 
 ###  adc.conversion_start() and adc.alert_read()
 
@@ -110,8 +120,17 @@ value = adc.alert_read()
 ```
 The values of channel1, channel2 and rate are the same as for adc.read().
 The timing jitter seen is about 200 ns. However the ADC's timer is not very
-precise. In applications where this is of importance some control and calibration of
-the returned timing pattern has to be done.
+precise. In applications where this is of importance some control and
+calibration of the returned timing pattern has to be done.
+The value returned by alert_read is the raw register bitmap,
+not corrected for the sign.
+This correction has to be done by the script. In the script below this is
+achieved implicitely by storing the values into a signed halfword array.
+Otherwise, it may be done by:
+```
+value = adc.alread_read()
+if value > 32768:
+ value -= 65536```
 
 ###  adc.\_write_register()
 
@@ -149,32 +168,33 @@ from array import array
 
 addr = 72
 gain = 1
-
 _BUFFERSIZE = const(512)
+
+data = array("h", 0 for _ in range(_BUFFERSIZE))
+timestamp = array("L", 0 for _ in range(_BUFFERSIZE))
+i2c = I2C(scl=Pin(5), sda=Pin(4), freq=400000)
+ads = ads1x15.ADS1115(i2c, addr, gain)
+
 #
 # Interrupt service routine for data acquisition
 # called by a timer interrupt
 #
-def sample(x):
-    global index_put, ads, irq_busy, data, timestamp
+def sample(x, adc = ads.alert_read, data=data, timestamp = timestamp):
+    global index_put, irq_busy
     if irq_busy:
         return
     irq_busy = True
     if index_put < _BUFFERSIZE:
         timestamp[index_put] = ticks_us()
-        data[index_put] = ads.read_rev()
+        data[index_put] = adc()
         index_put += 1
     irq_busy = False
 
-data = array("h", [0] * _BUFFERSIZE)
-timestamp = array("L", [0] * _BUFFERSIZE)
 irq_busy = False
 
 index_put = 0
 ADC_RATE = 5
 
-i2c = I2C(scl=Pin(5), sda=Pin(4), freq=400000)
-ads = ads1x15.ADS1115(i2c, addr, gain)
 # set the conversion rate to 860 SPS = 1.16 ms; that leaves about
 # 3 ms time for processing the data with a 5 ms timer
 ads.set_conv(7, 0) # start the first conversion
@@ -205,24 +225,25 @@ from array import array
 
 addr = 72
 gain = 1
-
 _BUFFERSIZE = const(512)
+
+data = array("h", 0 for _ in range(_BUFFERSIZE))
+i2c = I2C(scl=Pin(5), sda=Pin(4), freq=400000)
+ads = ads1x15.ADS1115(i2c, addr, gain)
 #
 # Interrupt service routine for data acquisition
 # activated by a pin level interrupt
 #
-def sample_auto(x):
-    global index_put, ads, data
+def sample_auto(x, adc = ads.alert_read, data = data):
+    global index_put
     if index_put < _BUFFERSIZE:
-        data[index_put] = ads.alert_read()
+        data[index_put] = adc()
         index_put += 1
 
 data = array("h", [0] * _BUFFERSIZE)
 index_put = 0
 
-i2c = I2C(scl=Pin(5), sda=Pin(4), freq=400000)
 irq_pin = Pin(13, Pin.IN, Pin.PULL_UP)
-ads = ads1x15.ADS1115(i2c, addr, gain)
 ads.conversion_start(5, 0)
 
 irq_pin.irq(trigger=Pin.IRQ_FALLING, handler=sample_auto)
