@@ -108,7 +108,8 @@ Otherwise, it may be done by:
 ```
 value = adc.alread_read()
 if value > 32768:
-    value -= 65536```
+    value -= 65536
+```
 
 ###  adc.conversion_start() and adc.alert_read()
 
@@ -130,7 +131,8 @@ Otherwise, it may be done by:
 ```
 value = adc.alread_read()
 if value > 32768:
- value -= 65536```
+    value -= 65536
+```
 
 ###  adc.\_write_register()
 
