@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
-import time
+import utime as time
 
 _REGISTER_MASK = const(0x03)
 _REGISTER_CONVERT = const(0x00)
@@ -176,7 +176,8 @@ class ADS1115:
 
     def alert_read(self):
         """Get the last reading from the continuous measurement."""
-        return self._read_register(_REGISTER_CONVERT)
+        res = self._read_register(_REGISTER_CONVERT)
+        return res if res < 32768 else res - 65536
 
 class ADS1015(ADS1115):
     def __init__(self, i2c, address=0x48):
