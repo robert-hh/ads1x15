@@ -126,7 +126,7 @@ calibration of the returned timing pattern has to be done.
 The value returned by alert_read is the raw register bitmap,
 not corrected for the sign.
 This correction has to be done by the script. In the script below this is
-achieved implicitely by storing the values into a signed halfword array.
+achieved implicitely by storing the values into a signed hal array.
 Otherwise, it may be done by:
 ```
 value = adc.alread_read()
@@ -242,7 +242,6 @@ def sample_auto(x, adc = ads.alert_read, data = data):
         data[index_put] = adc()
         index_put += 1
 
-data = array("h", [0] * _BUFFERSIZE)
 index_put = 0
 
 irq_pin = Pin(13, Pin.IN, Pin.PULL_UP)
