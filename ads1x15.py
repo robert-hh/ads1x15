@@ -145,13 +145,21 @@ class ADS1115:
         self.i2c.readfrom_into(self.address, self.temp2)
         return (self.temp2[0] << 8) | self.temp2[1]
 
+    def _raw_to_v(self, raw):
+        raw = raw if raw < 32768 else raw - 65536
+        v_p_b = _GAINS_V[self.gain] / 32767
+        return raw * v_p_b
+
     def set_conv(self, rate, channel1, channel2=None):
         """Set mode for read_rev"""
         self.mode = (_CQUE_NONE | _CLAT_NONLAT |
             _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] | _MODE_SINGLE |
             _OS_SINGLE | _GAINS[self.gain] | _CHANNELS[(channel1, channel2)])
         
-    def read(self, channel1, channel2=None, rate=4):
+    def read(self, channel1, channel2, rate):
+        return self._read(channel1, channel2, rate)
+
+    def _read(self, channel1, channel2=None, rate=4):
         """Read voltage between a channel and GND.  Time depends on conversion rate."""
         self._write_register(_REGISTER_CONFIG, (_CQUE_NONE | _CLAT_NONLAT |
             _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] | _MODE_SINGLE |
@@ -159,18 +167,19 @@ class ADS1115:
         while not self._read_register(_REGISTER_CONFIG) & _OS_NOTBUSY:
             time.sleep_ms(1)
         res = self._read_register(_REGISTER_CONVERT)
-        res = res if res < 32768 else res - 65536
-        v_p_b = _GAINS_V[self.gain] / 32767
-        v = res * v_p_b
-        return v
+
+        return self._raw_to_v(res)
 
     def read_rev(self):
         """Read voltage between a channel and GND. and then start the next conversion."""
         res = self._read_register(_REGISTER_CONVERT)
         self._write_register(_REGISTER_CONFIG, self.mode)
-        return res if res < 32768 else res - 65536
+        return self._raw_to_v(res)
 
-    def alert_start(self, rate, channel1, channel2 = None, threshold_high = 0x4000):
+    def alert_start(self, channel1, channel2, rate, threshold_high):
+        return self._alert_start(channel1, channel2, rate, threshold_high)
+
+    def _alert_start(self, channel1, channel2=None, rate=4, threshold_high=0x4000):
         """Start continuous measurement, set ALERT pin on threshold."""
         self._write_register(_REGISTER_LOWTHRESH, 0)
         self._write_register(_REGISTER_HITHRESH, threshold_high)
@@ -178,7 +187,7 @@ class ADS1115:
             _CPOL_ACTVLOW | _CMODE_TRAD |  _RATES[rate] |
             _MODE_CONTIN | _GAINS[self.gain] | _CHANNELS[(channel1, channel2)])
 
-    def conversion_start(self, rate, channel1, channel2 = None):
+    def conversion_start(self, rate, channel1, channel2=None):
         """Start continuous measurement, trigger on ALERT/RDY pin."""
         self._write_register(_REGISTER_LOWTHRESH, 0)
         self._write_register(_REGISTER_HITHRESH, 0x8000)
@@ -189,7 +198,8 @@ class ADS1115:
     def alert_read(self):
         """Get the last reading from the continuous measurement."""
         res = self._read_register(_REGISTER_CONVERT)
-        return res if res < 32768 else res - 65536
+        return self._raw_to_v(res)
+
 
 class ADS1015(ADS1115):
     def __init__(self, i2c, address=0x48):
@@ -198,7 +208,7 @@ class ADS1015(ADS1115):
     def read(self, channel1, channel2, rate):
         return super().read(channel1, channel2, rate) >> 4
 
-    def alert_start(self, rate, channel1, channel2 = None, threshold = 0x400):
+    def alert_start(self, channel1, channel2, rate, threshold):
         return super().alert_start(rate, channel1, channel2, threshold << 4)
 
     def alert_read(self):
