@@ -126,7 +126,7 @@ calibration of the returned timing pattern has to be done.
 The value returned by alert_read is the raw register bitmap,
 not corrected for the sign.
 This correction has to be done by the script. In the script below this is
-achieved implicitely by storing the values into a signed hal array.
+achieved implicitely by storing the values into a signed halfword array.
 Otherwise, it may be done by:
 ```
 value = adc.alread_read()

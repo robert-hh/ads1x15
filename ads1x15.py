@@ -136,13 +136,13 @@ class ADS1115:
         self.i2c.readfrom_into(self.address, self.temp2)
         return (self.temp2[0] << 8) | self.temp2[1]
 
-    def set_conv(self, rate, channel1, channel2 = None):
+    def set_conv(self, rate, channel1, channel2=None):
         """Set mode for read_rev"""
         self.mode = (_CQUE_NONE | _CLAT_NONLAT |
             _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] | _MODE_SINGLE |
             _OS_SINGLE | _GAINS[self.gain] | _CHANNELS[(channel1, channel2)])
         
-    def read(self, rate, channel1, channel2 = None):
+    def read(self, rate, channel1, channel2=None):
         """Read voltage between a channel and GND.  Time depends on conversion rate."""
         self._write_register(_REGISTER_CONFIG, (_CQUE_NONE | _CLAT_NONLAT |
             _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] | _MODE_SINGLE |
@@ -158,7 +158,7 @@ class ADS1115:
         self._write_register(_REGISTER_CONFIG, self.mode)
         return res if res < 32768 else res - 65536
 
-    def alert_start(self, rate, channe1l, channel2 = None, threshold_high = 0x4000):
+    def alert_start(self, rate, channel1, channel2=None, threshold_high=0x4000):
         """Start continuous measurement, set ALERT pin on threshold."""
         self._write_register(_REGISTER_LOWTHRESH, 0)
         self._write_register(_REGISTER_HITHRESH, threshold_high)
@@ -166,7 +166,7 @@ class ADS1115:
             _CPOL_ACTVLOW | _CMODE_TRAD |  _RATES[rate] |
             _MODE_CONTIN | _GAINS[self.gain] | _CHANNELS[(channel1, channel2)])
 
-    def conversion_start(self, rate, channel1, channel2 = None):
+    def conversion_start(self, rate, channel1, channel2=None):
         """Start continuous measurement, trigger on ALERT/RDY pin."""
         self._write_register(_REGISTER_LOWTHRESH, 0)
         self._write_register(_REGISTER_HITHRESH, 0x8000)
@@ -181,12 +181,12 @@ class ADS1115:
 
 class ADS1015(ADS1115):
     def __init__(self, i2c, address=0x48):
-        return super().__init__(i2c, address)
+        super().__init__(i2c, address)
 
     def read(self, rate, channel1, channel2 = None):
         return super().read(rate, channel1, channel2) >> 4
 
-    def alert_start(self, rate, channel1, channel2 = None, threshold = 0x400):
+    def alert_start(self, rate, channel1, channel2=None, threshold=0x400):
         return super().alert_start(rate, channel1, channel2, threshold << 4)
 
     def alert_read(self):
