@@ -100,16 +100,6 @@ the range of the ADC, 0..32767 for ADC1115 and
 0..2047 for ADS1015. Rate should be chosen according to the input signal
 change rate and the precision needed. The mode set is the traditional
 comparator mode, with the lower threshold set to 0.
-The value returned by alert_read is the raw register bitmap,
-not corrected for the sign.
-This correction has to be done by the script. In the script below this is
-achieved implicitely by storing the values into a signed halfword array.
-Otherwise, it may be done by:
-```
-value = adc.alread_read()
-if value > 32768:
-    value -= 65536
-```
 
 ###  adc.conversion_start() and adc.alert_read()
 
@@ -123,42 +113,25 @@ The values of channel1, channel2 and rate are the same as for adc.read().
 The timing jitter seen is about 200 ns. However the ADC's timer is not very
 precise. In applications where this is of importance some control and
 calibration of the returned timing pattern has to be done.
-The value returned by alert_read is the raw register bitmap,
-not corrected for the sign.
-This correction has to be done by the script. In the script below this is
-achieved implicitely by storing the values into a signed halfword array.
-Otherwise, it may be done by:
-```
-value = adc.alread_read()
-if value > 32768:
-    value -= 65536
-```
 
-###  adc.\_write_register()
-
-Write to a register of the ADC.
-```
-adc._write_register(register, value)
-```
-Register is the number of the register according to the data sheet, value a 16 bit
-quantity coded accordingly. Register numbers.
-```
-0: Conversion Register; holding the converted value
-1: Configuration Register
-2: Low Threshold
-3: High Threshold
-```
 ###  adc.\_read_register()
 
 Read a register of the ADC.
 ```
-value = adc._read_register(register, value)
+value = adc._read_register(register)
 ```
-Register is the number of the register according to the data sheet, value a 16 bit
-quantity coded accordingly. Reading the conversion register returns the value of
+Register is the number of the register according to the data sheet. Reading the conversion register returns the value of
 the most recent sampling. Bit 15 of the configuration register is set when a conversion
 is finished.
 
+###  adc.\_write_register()
+
+Write a register of the ADC.
+```
+value = adc._write_register(register, value)
+```
+Register is the number of the register according to the data sheet, value a 16 bit
+quantity coded accordingly.
 # Sample Code
 
 ## Continuous sampling triggered by the timer
