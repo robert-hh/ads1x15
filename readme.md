@@ -66,7 +66,7 @@ required for a single conversion is 1/samples\_per\_second plus the time
 needed for communication with the ADC, which is about 1 ms on an esp8266
 at 80 MHz. Slower conversion yields in a less noisy result.
 The data sheet figures of the ads1x15 are given for the slowest sample rate.
-The value returned is a signed integer.
+The value returned is a signed integer of the raw ADC value. That value can be converted to a voltage with the method raw_to_v().
 
 ###  adc.set_conv and adc.read_rev()
 
@@ -84,7 +84,8 @@ communication is shorter than the timer period plus the time needed to process t
 A sample code is shown below. The timing jitter observed on an esp8266 was
 about 1 ms, but the time period is defined by the micro's timer, which has
 it's own issues.
-The value returned by read_rev is a signed integer.
+The value returned by read_rev is a signed integer of the raw ADC value.
+That value can be converted to a voltage with the method raw_to_v().
 
 ###  adc.alert_start() and adc.alert_read()
 
@@ -100,6 +101,8 @@ the range of the ADC, 0..32767 for ADC1115 and
 0..2047 for ADS1015. Rate should be chosen according to the input signal
 change rate and the precision needed. The mode set is the traditional
 comparator mode, with the lower threshold set to 0.
+The value returned by alert_read is a signed integer of the raw ADC value.
+That value can be converted to a voltage with the method raw_to_v().
 
 ###  adc.conversion_start() and adc.alert_read()
 
@@ -113,6 +116,15 @@ The values of channel1, channel2 and rate are the same as for adc.read().
 The timing jitter seen is about 200 ns. However the ADC's timer is not very
 precise. In applications where this is of importance some control and
 calibration of the returned timing pattern has to be done.
+The value returned by alert_read is a signed integer of the raw ADC value.
+That value can be converted to a voltage with the method raw_to_v().
+
+### adc.raw_to_v()
+```
+voltage = adc.raw_to_v(raw)
+```
+Convert the raw ADC result to a voltage that matches the gain setting of the
+constructor. It returns a float value of the voltage.
 
 ###  adc.\_read_register()
 

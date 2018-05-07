@@ -92,6 +92,15 @@ _GAINS = (
     _PGA_0_256V  # 16x
 )
 
+_GAINS_V = (
+    6.144,  # 2/3x
+    4.096,  # 1x
+    2.048,  # 2x
+    1.024,  # 4x
+    0.512,  # 8x
+    0.256  # 16x
+)
+
 _CHANNELS = {
     (0, None): _MUX_SINGLE_0,
     (1, None): _MUX_SINGLE_1,
@@ -135,6 +144,10 @@ class ADS1115:
         self.i2c.writeto(self.address, self.temp1)
         self.i2c.readfrom_into(self.address, self.temp2)
         return (self.temp2[0] << 8) | self.temp2[1]
+
+    def raw_to_v(self, raw):
+        v_p_b = _GAINS_V[self.gain] / 32767
+        return raw * v_p_b
 
     def set_conv(self, rate, channel1, channel2=None):
         """Set mode for read_rev"""
@@ -183,6 +196,9 @@ class ADS1015(ADS1115):
     def __init__(self, i2c, address=0x48):
         super().__init__(i2c, address)
 
+    def raw_to_v(self, raw):
+        return super().raw_to_v(raw << 4)
+    
     def read(self, rate, channel1, channel2 = None):
         return super().read(rate, channel1, channel2) >> 4
 
