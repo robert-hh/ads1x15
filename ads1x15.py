@@ -193,8 +193,8 @@ class ADS1115:
         return res if res < 32768 else res - 65536
 
 class ADS1015(ADS1115):
-    def __init__(self, i2c, address=0x48):
-        super().__init__(i2c, address)
+    def __init__(self, i2c, address=0x48, gain=1):
+        super().__init__(i2c, address, gain)
 
     def raw_to_v(self, raw):
         return super().raw_to_v(raw << 4)
