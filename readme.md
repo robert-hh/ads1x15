@@ -157,8 +157,8 @@ addr = 72
 gain = 1
 _BUFFERSIZE = const(512)
 
-data = array("h", 0 for _ in range(_BUFFERSIZE))
-timestamp = array("L", 0 for _ in range(_BUFFERSIZE))
+data = array("h", (0 for _ in range(_BUFFERSIZE)))
+timestamp = array("L", (0 for _ in range(_BUFFERSIZE)))
 i2c = I2C(scl=Pin(5), sda=Pin(4), freq=400000)
 ads = ads1x15.ADS1115(i2c, addr, gain)
 
@@ -214,7 +214,7 @@ addr = 72
 gain = 1
 _BUFFERSIZE = const(512)
 
-data = array("h", 0 for _ in range(_BUFFERSIZE))
+data = array("h", (0 for _ in range(_BUFFERSIZE)))
 i2c = I2C(scl=Pin(5), sda=Pin(4), freq=400000)
 ads = ads1x15.ADS1115(i2c, addr, gain)
 #
