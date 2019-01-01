@@ -1,6 +1,7 @@
 # The MIT License (MIT)
 #
-# Copyright (c) 2016 Radomir Dopieralski (@deshipu), 2017 Robert Hammelrath (@robert-hh)
+# Copyright (c) 2016 Radomir Dopieralski (@deshipu),
+#               2017 Robert Hammelrath (@robert-hh)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +32,7 @@ _REGISTER_HITHRESH = const(0x03)
 _OS_MASK = const(0x8000)
 _OS_SINGLE = const(0x8000)  # Write: Set to start a single-conversion
 _OS_BUSY = const(0x0000)  # Read: Bit=0 when conversion is in progress
-_OS_NOTBUSY = const(0x8000)  # Read: Bit=1 when device is not performing a conversion
+_OS_NOTBUSY = const(0x8000)  # Read: Bit=1 when no conversion is in progress
 
 _MUX_MASK = const(0x7000)
 _MUX_DIFF_0_1 = const(0x0000)  # Differential P  =  AIN0, N  =  AIN1 (default)
@@ -63,7 +64,7 @@ _DR_920SPS = const(0x0060)   # 920 /64 samples per second
 _DR_1600SPS = const(0x0080)  # 1600/128 samples per second (default)
 _DR_2400SPS = const(0x00A0)  # 2400/250 samples per second
 _DR_3300SPS = const(0x00C0)  # 3300/475 samples per second
-_DR_860SPS  = const(0x00E0)  # -   /860 samples per Second
+_DR_860SPS = const(0x00E0)  # -   /860 samples per Second
 
 _CMODE_MASK = const(0x0010)
 _CMODE_TRAD = const(0x0000)  # Traditional comparator with hysteresis (default)
@@ -81,15 +82,16 @@ _CQUE_MASK = const(0x0003)
 _CQUE_1CONV = const(0x0000)  # Assert ALERT/RDY after one conversions
 _CQUE_2CONV = const(0x0001)  # Assert ALERT/RDY after two conversions
 _CQUE_4CONV = const(0x0002)  # Assert ALERT/RDY after four conversions
-_CQUE_NONE = const(0x0003)  # Disable the comparator and put ALERT/RDY in high state (default)
+# Disable the comparator and put ALERT/RDY in high state (default)
+_CQUE_NONE = const(0x0003)
 
 _GAINS = (
-    _PGA_6_144V, # 2/3x
-    _PGA_4_096V, # 1x
-    _PGA_2_048V, # 2x
-    _PGA_1_024V, # 4x
-    _PGA_0_512V, # 8x
-    _PGA_0_256V  # 16x
+    _PGA_6_144V,  # 2/3x
+    _PGA_4_096V,  # 1x
+    _PGA_2_048V,  # 2x
+    _PGA_1_024V,  # 4x
+    _PGA_0_512V,  # 8x
+    _PGA_0_256V   # 16x
 )
 
 _GAINS_V = (
@@ -113,14 +115,14 @@ _CHANNELS = {
 }
 
 _RATES = (
-    _DR_128SPS,  # 128/8 samples per second
-    _DR_250SPS,  # 250/16 samples per second
-    _DR_490SPS,  # 490/32 samples per second
-    _DR_920SPS,  # 920/64 samples per second
-    _DR_1600SPS, # 1600/128 samples per second (default)
-    _DR_2400SPS, # 2400/250 samples per second
-    _DR_3300SPS, # 3300/475 samples per second
-    _DR_860SPS   # - /860 samples per Second
+    _DR_128SPS,   # 128/8 samples per second
+    _DR_250SPS,   # 250/16 samples per second
+    _DR_490SPS,   # 490/32 samples per second
+    _DR_920SPS,   # 920/64 samples per second
+    _DR_1600SPS,  # 1600/128 samples per second (default)
+    _DR_2400SPS,  # 2400/250 samples per second
+    _DR_3300SPS,  # 3300/475 samples per second
+    _DR_860SPS    # - /860 samples per Second
 )
 
 
@@ -128,7 +130,7 @@ class ADS1115:
     def __init__(self, i2c, address=0x48, gain=1):
         self.i2c = i2c
         self.address = address
-        self.gain = gain #
+        self.gain = gain
         self.temp1 = bytearray(1)
         self.temp2 = bytearray(2)
         self.temp3 = bytearray(3)
@@ -152,45 +154,53 @@ class ADS1115:
     def set_conv(self, rate, channel1, channel2=None):
         """Set mode for read_rev"""
         self.mode = (_CQUE_NONE | _CLAT_NONLAT |
-            _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] | _MODE_SINGLE |
-            _OS_SINGLE | _GAINS[self.gain] | _CHANNELS[(channel1, channel2)])
-        
+                     _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] |
+                     _MODE_SINGLE | _OS_SINGLE | _GAINS[self.gain] |
+                     _CHANNELS[(channel1, channel2)])
+
     def read(self, rate, channel1, channel2=None):
-        """Read voltage between a channel and GND.  Time depends on conversion rate."""
+        """Read voltage between a channel and GND.
+           Time depends on conversion rate."""
         self._write_register(_REGISTER_CONFIG, (_CQUE_NONE | _CLAT_NONLAT |
-            _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] | _MODE_SINGLE |
-            _OS_SINGLE | _GAINS[self.gain] | _CHANNELS[(channel1, channel2)]))
+                             _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] |
+                             _MODE_SINGLE | _OS_SINGLE | _GAINS[self.gain] |
+                             _CHANNELS[(channel1, channel2)]))
         while not self._read_register(_REGISTER_CONFIG) & _OS_NOTBUSY:
             time.sleep_ms(1)
         res = self._read_register(_REGISTER_CONVERT)
         return res if res < 32768 else res - 65536
 
     def read_rev(self):
-        """Read voltage between a channel and GND. and then start the next conversion."""
+        """Read voltage between a channel and GND. and then start
+           the next conversion."""
         res = self._read_register(_REGISTER_CONVERT)
         self._write_register(_REGISTER_CONFIG, self.mode)
         return res if res < 32768 else res - 65536
 
-    def alert_start(self, rate, channel1, channel2=None, threshold_high=0x4000):
+    def alert_start(self, rate, channel1, channel2=None,
+                    threshold_high=0x4000):
         """Start continuous measurement, set ALERT pin on threshold."""
         self._write_register(_REGISTER_LOWTHRESH, 0)
         self._write_register(_REGISTER_HITHRESH, threshold_high)
         self._write_register(_REGISTER_CONFIG, _CQUE_1CONV | _CLAT_LATCH |
-            _CPOL_ACTVLOW | _CMODE_TRAD |  _RATES[rate] |
-            _MODE_CONTIN | _GAINS[self.gain] | _CHANNELS[(channel1, channel2)])
+                             _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] |
+                             _MODE_CONTIN | _GAINS[self.gain] |
+                             _CHANNELS[(channel1, channel2)])
 
     def conversion_start(self, rate, channel1, channel2=None):
         """Start continuous measurement, trigger on ALERT/RDY pin."""
         self._write_register(_REGISTER_LOWTHRESH, 0)
         self._write_register(_REGISTER_HITHRESH, 0x8000)
         self._write_register(_REGISTER_CONFIG, _CQUE_1CONV | _CLAT_NONLAT |
-            _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] | 
-            _MODE_CONTIN | _GAINS[self.gain] | _CHANNELS[(channel1, channel2)])
+                             _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] |
+                             _MODE_CONTIN | _GAINS[self.gain] |
+                             _CHANNELS[(channel1, channel2)])
 
     def alert_read(self):
         """Get the last reading from the continuous measurement."""
         res = self._read_register(_REGISTER_CONVERT)
         return res if res < 32768 else res - 65536
+
 
 class ADS1015(ADS1115):
     def __init__(self, i2c, address=0x48, gain=1):
@@ -198,8 +208,8 @@ class ADS1015(ADS1115):
 
     def raw_to_v(self, raw):
         return super().raw_to_v(raw << 4)
-    
-    def read(self, rate, channel1, channel2 = None):
+
+    def read(self, rate, channel1, channel2=None):
         return super().read(rate, channel1, channel2) >> 4
 
     def alert_start(self, rate, channel1, channel2=None, threshold=0x400):
@@ -207,4 +217,3 @@ class ADS1015(ADS1115):
 
     def alert_read(self):
         return super().alert_read() >> 4
-
