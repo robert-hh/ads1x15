@@ -148,6 +148,7 @@ quantity coded accordingly.
 
 ## Continuous sampling triggered by the timer
 ```
+# Sample code for ESP8266 & ESP32, Micropython.org firmware
 from machine import I2C, Pin, Timer
 import ads1x15
 from time import sleep_ms, ticks_ms, ticks_us
@@ -160,6 +161,8 @@ _BUFFERSIZE = const(512)
 data = array("h", (0 for _ in range(_BUFFERSIZE)))
 timestamp = array("L", (0 for _ in range(_BUFFERSIZE)))
 i2c = I2C(scl=Pin(5), sda=Pin(4), freq=400000)
+# for the Pycom branch, use:
+# i2c = I2C()
 ads = ads1x15.ADS1115(i2c, addr, gain)
 
 #
@@ -206,6 +209,7 @@ At 160MHz clock, the Jitter was about +/- 50 µs
 ## Continuous sampling trigged by the ADC
 
 ```
+# Sample code for ESP8266 & ESP32, Micropython.org firmware
 from machine import I2C, Pin, Timer
 import ads1x15
 from array import array
@@ -216,6 +220,8 @@ _BUFFERSIZE = const(512)
 
 data = array("h", (0 for _ in range(_BUFFERSIZE)))
 i2c = I2C(scl=Pin(5), sda=Pin(4), freq=400000)
+# for the Pycom branch or Micropython, use:
+# i2c = I2C()
 ads = ads1x15.ADS1115(i2c, addr, gain)
 #
 # Interrupt service routine for data acquisition

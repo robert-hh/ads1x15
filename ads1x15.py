@@ -131,20 +131,15 @@ class ADS1115:
         self.i2c = i2c
         self.address = address
         self.gain = gain
-        self.temp1 = bytearray(1)
         self.temp2 = bytearray(2)
-        self.temp3 = bytearray(3)
 
     def _write_register(self, register, value):
-        self.temp3[0] = register
-        self.temp3[1] = value >> 8
-        self.temp3[2] = value & 0xff
-        self.i2c.writeto(self.address, self.temp3)
+        self.temp2[0] = value >> 8
+        self.temp2[1] = value & 0xff
+        self.i2c.writeto_mem(self.address, register, self.temp2)
 
     def _read_register(self, register):
-        self.temp1[0] = register
-        self.i2c.writeto(self.address, self.temp1)
-        self.i2c.readfrom_into(self.address, self.temp2)
+        self.i2c.readfrom_mem_into(self.address, register, self.temp2)
         return (self.temp2[0] << 8) | self.temp2[1]
 
     def raw_to_v(self, raw):
