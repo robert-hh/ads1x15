@@ -197,6 +197,40 @@ class ADS1115:
         return res if res < 32768 else res - 65536
 
 
+class ADS1113(ADS1115):
+    def __init__(self, i2c, address=0x48):
+        super().__init__(i2c, address, 1)
+
+    def raw_to_v(self, raw):
+        return super().raw_to_v(raw)
+
+    def read(self, rate=4):
+        return super().read(rate, 0, 1)
+
+    def alert_start(self, rate=4, threshold=0x4000):
+        return super().alert_start(rate, 0, 1, threshold)
+
+    def alert_read(self):
+        return super().alert_read()
+
+
+class ADS1114(ADS1115):
+    def __init__(self, i2c, address=0x48, gain=1):
+        super().__init__(i2c, address, gain)
+
+    def raw_to_v(self, raw):
+        return super().raw_to_v(raw)
+
+    def read(self, rate=4):
+        return super().read(rate, 0, 1)
+
+    def alert_start(self, rate=4, threshold=0x4000):
+        return super().alert_start(rate, 0, 1, threshold)
+
+    def alert_read(self):
+        return super().alert_read()
+
+
 class ADS1015(ADS1115):
     def __init__(self, i2c, address=0x48, gain=1):
         super().__init__(i2c, address, gain)
