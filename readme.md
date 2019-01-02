@@ -20,11 +20,20 @@ set the address pin to low (address = 72) or high (address = 73).
 
 ## Class
 
-The driver contains the ADS1115 class and the derived ADS1015 class. Since the
-two devices only differ by the conversion size, the same methods can be applied,
+The driver contains the ADS1115 class and the derived ADS1114, ADS1113 and
+ADS1015 classes. Since the these devices only differ by the minor parameters
+link the number of channels or conversion size, the same methods can be applied,
 with different interpretation of the parameters.
 ```
 adc = ADS1115(i2c, address, gain)
+```
+or
+```
+adc = ADS1114(i2c, address, gain)
+```
+or
+```
+adc = ADS1113(i2c, address)
 ```
 or
 ```
@@ -45,12 +54,12 @@ table. It defines the full range of the ADC.  Acceptable values are:
 
 ### adc.read()
 ```
-value = adc.read(rate, channel1[, channel2])
+value = adc.read([rate, [channel1[, channel2]]])
 ```
 Start a conversion on channel at speed rate and return the value.
 Channel1 is the single input channel (0 .. 3). If channel2 is supplied,
 the difference between channel1 and channel2 is taken. Rate is the
-conversion rate. Suitable values are (ADS1015 / ADS1115):
+conversion rate. Suitable values are (ADS1015 / ADS1115/ ADS1114):
 ```
 0 :  128/8      samples per second
 1 :  250/16     samples per second
@@ -61,7 +70,7 @@ conversion rate. Suitable values are (ADS1015 / ADS1115):
 6 :  3300/475   samples per second
 7 :  - /860     samples per Second
 ```
-The first value applies to the ADS1015, the second to the ADS1115. The time
+The first value applies to the ADS1015, the second to the ADS1115 and ADS1114. The time
 required for a single conversion is 1/samples\_per\_second plus the time
 needed for communication with the ADC, which is about 1 ms on an esp8266
 at 80 MHz. Slower conversion yields in a less noisy result.
@@ -74,7 +83,7 @@ Pair of methods for a time optimized sequential reading triggered by a time.
 For using, you would first set the conversion parameters with set_conv() and then get
 the values in a timer callback function with read_rev().
 ```
-adc.set_conv(rate, channel1[, channel2])
+adc.set_conv([rate, [channel1[, channel2]]])
 value = adc.read_rev()
 ```
 The definition of channel1, channel2 and rate are the same as with adc.read(). The methods
@@ -92,7 +101,7 @@ That value can be converted to a voltage with the method raw_to_v().
 Pair of methods to start a continuous sampling on a single channel and trigger
 an alert once a certain threshold is reached.
 ```
-adc.alert_start(rate, channel1[, channel2][, threshold])
+adc.alert_start([rate, [channel1[, channel2]]][, threshold])
 value = adc.alert_read()
 ```
 The values of channel1, channel2 and rate are the same as for adc.read().
@@ -109,7 +118,7 @@ That value can be converted to a voltage with the method raw_to_v().
 Pair of methods to start a continuous sampling on a single channel and trigger
 an alert at every sample. This function pair is provided for an IRQ-based set-up.
 ```
-adc.conversion_start(rate, channel1 [, channel2])
+adc.conversion_start([rate, [channel1 [, channel2]]])
 value = adc.alert_read()
 ```
 The values of channel1, channel2 and rate are the same as for adc.read().
