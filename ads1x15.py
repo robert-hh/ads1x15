@@ -173,11 +173,12 @@ class ADS1115:
         return res if res < 32768 else res - 65536
 
     def alert_start(self, rate=4, channel1=0, channel2=None,
-                    threshold_high=0x4000):
+                    threshold_high=0x4000, threshold_low=0, latched=False) :
         """Start continuous measurement, set ALERT pin on threshold."""
-        self._write_register(_REGISTER_LOWTHRESH, 0)
+        self._write_register(_REGISTER_LOWTHRESH, threshold_low)
         self._write_register(_REGISTER_HITHRESH, threshold_high)
-        self._write_register(_REGISTER_CONFIG, _CQUE_1CONV | _CLAT_LATCH |
+        self._write_register(_REGISTER_CONFIG, _CQUE_1CONV |
+                             _CLAT_LATCH if latched else _CLAT_NONLAT |
                              _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] |
                              _MODE_CONTIN | _GAINS[self.gain] |
                              _CHANNELS[(channel1, channel2)])
@@ -207,8 +208,8 @@ class ADS1113(ADS1115):
     def read(self, rate=4):
         return super().read(rate, 0, 1)
 
-    def alert_start(self, rate=4, threshold=0x4000):
-        return super().alert_start(rate, 0, 1, threshold)
+    def alert_start(self, rate=4, threshold_high=0x4000, threshold_low=0, latched=False):
+        return super().alert_start(rate, 0, 1, threshold_high, threshold_low, latched)
 
     def alert_read(self):
         return super().alert_read()
@@ -224,8 +225,9 @@ class ADS1114(ADS1115):
     def read(self, rate=4):
         return super().read(rate, 0, 1)
 
-    def alert_start(self, rate=4, threshold=0x4000):
-        return super().alert_start(rate, 0, 1, threshold)
+    def alert_start(self, rate=4, threshold_high=0x4000, threshold_low=0, latched=False):
+        return super().alert_start(rate, 0, 1, threshold_high,
+            threshold_low, latched)
 
     def alert_read(self):
         return super().alert_read()
@@ -241,8 +243,10 @@ class ADS1015(ADS1115):
     def read(self, rate=4, channel1=0, channel2=None):
         return super().read(rate, channel1, channel2) >> 4
 
-    def alert_start(self, rate=4, channel1=0, channel2=None, threshold=0x400):
-        return super().alert_start(rate, channel1, channel2, threshold << 4)
+    def alert_start(self, rate=4, channel1=0, channel2=None, threshold_high=0x400,
+        threshold_low=0, latched=False):
+        return super().alert_start(rate, channel1, channel2, threshold_high << 4,
+            threshold_low << 4, latched)
 
     def alert_read(self):
         return super().alert_read() >> 4
