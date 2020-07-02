@@ -183,7 +183,7 @@ ads = ads1x15.ADS1115(i2c, addr, gain)
 # Interrupt service routine for data acquisition
 # called by a timer interrupt
 #
-def sample(x, adc = ads.alert_read, data=data, timestamp = timestamp):
+def sample(x, adc = ads.read_rev, data=data, timestamp = timestamp):
     global index_put, irq_busy
     if irq_busy:
         return
