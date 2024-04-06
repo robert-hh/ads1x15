@@ -143,7 +143,7 @@ class ADS1115:
         return (self.temp2[0] << 8) | self.temp2[1]
 
     def raw_to_v(self, raw):
-        v_p_b = _GAINS_V[self.gain] / 32767
+        v_p_b = _GAINS_V[self.gain] / 32768
         return raw * v_p_b
 
     def set_conv(self, rate=4, channel1=0, channel2=None):

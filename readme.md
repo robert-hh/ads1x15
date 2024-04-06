@@ -160,6 +160,17 @@ Register is the number of the register according to the data sheet, value a 16 b
 quantity coded accordingly.
 # Sample Code
 
+## 
+```
+# Sample code for RP2. Read a single channel
+
+from machine import I2C, Pin
+from ads1x15 import ADS1115
+i2c=I2C(0, sda=Pin(4), scl=Pin(5))
+adc = ADS1115(i2c, address=72, gain=1)
+value = adc.read(0, 0)
+print(value)
+```
 ## Continuous sampling triggered by the timer
 ```
 # Sample code for ESP8266 & ESP32, Micropython.org firmware
