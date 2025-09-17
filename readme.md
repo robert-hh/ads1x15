@@ -106,14 +106,14 @@ value = adc.alert_read()
 ```
 The values of channel1, channel2 and rate are the same as for adc.read().
 Threshold_high tells upper value of the threshold register, and threshold_low 
-the lower value. Boths must be be within
+the lower value. Both must be be within
 the range of the ADC, 0..32767 for ADC1115 and
 0..2047 for ADS1015. Rate should be chosen according to the input signal
 change rate and the precision needed. The mode set is the traditional
 comparator mode, with the lower threshold set to 0.
-latched tells whether thge aler is latched or not. If False, only one 
-alter is generated when the threshold is reached until the threshold condition
-is not valid, if True, alert signals are generated as long as the treshold conditions
+latched tells whether the alert is latched or not. If False, only one 
+alert is generated when the threshold is reached until the threshold condition
+is not valid, if True, alert signals are generated as long as the threshold conditions
 match.
 The value returned by alert_read is a signed integer of the raw ADC value.
 That value can be converted to a voltage with the method raw_to_v().
