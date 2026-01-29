@@ -146,6 +146,21 @@ class ADS1115:
         v_p_b = _GAINS_V[self.gain] / 32768
         return raw * v_p_b
 
+    def set_new_conv(self, rate=4, channel1=0, channel2=None):
+        """Start new conversion."""
+        self.set_conv(rate, channel1, channel2)
+        self._write_register(_REGISTER_CONFIG, self.mode)
+
+    def read_any(self, raw:False):
+        """Non-blocking read between channels setted by set_new_conv,
+           returns None if the conversion is still happening."""
+        if self._read_register(_REGISTER_CONFIG) & _OS_BUSY:
+            return None
+        res = self._read_register(_REGISTER_CONVERT)
+        if res >= 32768:
+            res -= 65536
+        return res if raw else self.raw_to_v(res)
+
     def set_conv(self, rate=4, channel1=0, channel2=None):
         """Set mode for read_rev"""
         self.mode = (_CQUE_NONE | _CLAT_NONLAT |
