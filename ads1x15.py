@@ -21,7 +21,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
+
 import utime as time
+import asyncio
+
 
 _REGISTER_MASK = const(0x03)
 _REGISTER_CONVERT = const(0x00)
@@ -167,6 +170,20 @@ class ADS1115:
                      _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] |
                      _MODE_SINGLE | _OS_SINGLE | _GAINS[self.gain] |
                      _CHANNELS[(channel1, channel2)])
+
+    async def read_async(self, rate=4, channel1=0, channel2=None, raw:False):
+        """Asynchronous mode to read voltage between a channel and GND.
+           Async await depends on conversion rate."""
+        self._write_register(_REGISTER_CONFIG, (_CQUE_NONE | _CLAT_NONLAT |
+                             _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] |
+                             _MODE_SINGLE | _OS_SINGLE | _GAINS[self.gain] |
+                             _CHANNELS[(channel1, channel2)]))
+        while not self._read_register(_REGISTER_CONFIG) & _OS_NOTBUSY:
+            await asyncio.sleep_ms(1)
+        res = self._read_register(_REGISTER_CONVERT)
+        if res >= 32768:
+            res -= 65536
+        return res if raw else self.raw_to_v(res)
 
     def read(self, rate=4, channel1=0, channel2=None):
         """Read voltage between a channel and GND.
