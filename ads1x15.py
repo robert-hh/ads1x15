@@ -154,7 +154,7 @@ class ADS1115:
         self.set_conv(rate, channel1, channel2)
         self._write_register(_REGISTER_CONFIG, self.mode)
 
-    def read_any(self, raw:False):
+    def read_any(self, raw=False):
         """Non-blocking read between channels setted by set_new_conv,
            returns None if the conversion is still happening."""
         if self._read_register(_REGISTER_CONFIG) & _OS_BUSY:
@@ -171,7 +171,7 @@ class ADS1115:
                      _MODE_SINGLE | _OS_SINGLE | _GAINS[self.gain] |
                      _CHANNELS[(channel1, channel2)])
 
-    async def read_async(self, rate=4, channel1=0, channel2=None, raw:False):
+    async def read_async(self, rate=4, channel1=0, channel2=None, raw=False):
         """Asynchronous mode to read voltage between a channel and GND.
            Async await depends on conversion rate."""
         self._write_register(_REGISTER_CONFIG, (_CQUE_NONE | _CLAT_NONLAT |
