@@ -145,12 +145,8 @@ class ADS1115:
         self.i2c.readfrom_mem_into(self.address, register, self.temp2)
         return (self.temp2[0] << 8) | self.temp2[1]
 
-    def raw_to_v(self, raw):
-        v_p_b = _GAINS_V[self.gain] / 32768
-        return raw * v_p_b
-
     def set_new_conv(self, rate=4, channel1=0, channel2=None):
-        """Start new conversion."""
+        """Start new conversion for later non-blocking read_any."""
         self.set_conv(rate, channel1, channel2)
         self._write_register(_REGISTER_CONFIG, self.mode)
 
@@ -160,20 +156,12 @@ class ADS1115:
         if self._read_register(_REGISTER_CONFIG) & _OS_BUSY:
             return None
         res = self._read_register(_REGISTER_CONVERT)
-        if res >= 32768:
-            res -= 65536
-        return res if raw else self.raw_to_v(res)
-
-    def set_conv(self, rate=4, channel1=0, channel2=None):
-        """Set mode for read_rev"""
-        self.mode = (_CQUE_NONE | _CLAT_NONLAT |
-                     _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] |
-                     _MODE_SINGLE | _OS_SINGLE | _GAINS[self.gain] |
-                     _CHANNELS[(channel1, channel2)])
-
+        res -= 65536 if res >= 32768 else 0
+        return res if raw else res * _GAINS_V[self.gain] / 32768
+    
     async def read_async(self, rate=4, channel1=0, channel2=None, raw=False):
         """Asynchronous mode to read voltage between a channel and GND.
-           Async await depends on conversion rate."""
+           Await time depends on conversion rate."""
         self._write_register(_REGISTER_CONFIG, (_CQUE_NONE | _CLAT_NONLAT |
                              _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] |
                              _MODE_SINGLE | _OS_SINGLE | _GAINS[self.gain] |
@@ -181,10 +169,13 @@ class ADS1115:
         while not self._read_register(_REGISTER_CONFIG) & _OS_NOTBUSY:
             await asyncio.sleep_ms(1)
         res = self._read_register(_REGISTER_CONVERT)
-        if res >= 32768:
-            res -= 65536
-        return res if raw else self.raw_to_v(res)
+        res -= 65536 if res >= 32768 else 0
+        return res if raw else res * _GAINS_V[self.gain] / 32768
 
+    def raw_to_v(self, raw):
+        v_p_b = _GAINS_V[self.gain] / 32768
+        return raw * v_p_b
+        
     def read(self, rate=4, channel1=0, channel2=None):
         """Read voltage between a channel and GND.
            Time depends on conversion rate."""
@@ -197,6 +188,13 @@ class ADS1115:
         res = self._read_register(_REGISTER_CONVERT)
         return res if res < 32768 else res - 65536
 
+    def set_conv(self, rate=4, channel1=0, channel2=None):
+        """Set mode for read_rev"""
+        self.mode = (_CQUE_NONE | _CLAT_NONLAT |
+                     _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] |
+                     _MODE_SINGLE | _OS_SINGLE | _GAINS[self.gain] |
+                     _CHANNELS[(channel1, channel2)])
+        
     def read_rev(self):
         """Read voltage between a channel and GND. and then start
            the next conversion."""
