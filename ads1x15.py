@@ -22,6 +22,7 @@
 # THE SOFTWARE.
 #
 import utime as time
+import asyncio
 
 _REGISTER_MASK = const(0x03)
 _REGISTER_CONVERT = const(0x00)
@@ -162,6 +163,19 @@ class ADS1115:
                              _CHANNELS[(channel1, channel2)]))
         while not self._read_register(_REGISTER_CONFIG) & _OS_NOTBUSY:
             time.sleep_ms(1)
+        res = self._read_register(_REGISTER_CONVERT)
+        return res if res < 32768 else res - 65536
+
+    async def aioread(self, rate=4, channel1=0, channel2=None):
+        """Read voltage between a channel and GND.
+           Time depends on conversion rate. Uses cooperative sleeping
+           (asyncio)."""
+        self._write_register(_REGISTER_CONFIG, (_CQUE_NONE | _CLAT_NONLAT |
+                             _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] |
+                             _MODE_SINGLE | _OS_SINGLE | _GAINS[self.gain] |
+                             _CHANNELS[(channel1, channel2)]))
+        while not self._read_register(_REGISTER_CONFIG) & _OS_NOTBUSY:
+            await asyncio.sleep_ms(1)
         res = self._read_register(_REGISTER_CONVERT)
         return res if res < 32768 else res - 65536
 
