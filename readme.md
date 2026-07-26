@@ -77,6 +77,13 @@ at 80 MHz. Slower conversion yields in a less noisy result.
 The data sheet figures of the ads1x15 are given for the slowest sample rate.
 The value returned is a signed integer of the raw ADC value. That value can be converted to a voltage with the method raw_to_v().
 
+### adc.aioread()
+```
+value = await adc.aioread([rate, [channel1[, channel2]]])
+```
+
+Similar to `adc.read()`, but will yield the CPU between each check for the result being ready.
+
 ###  adc.set_conv and adc.read_rev()
 
 Pair of methods for a time optimized sequential reading triggered by a time.
