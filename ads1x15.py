@@ -126,6 +126,18 @@ _RATES = (
     _DR_860SPS    # - /860 samples per Second
 )
 
+# Exakte Wartezeiten in ms für den ADS1115 basierend auf der Rate
+_CONVERSION_DELAYS = (
+        125,  # 8 SPS
+        62.5, # 16 SPS
+        31.25,# 32 SPS
+        15.63,# 64 SPS
+        7.81, # 128 SPS
+        4.0,  # 250 SPS
+        2.1,  # 475 SPS
+        1.16  # 860 SPS
+    )
+
 
 class ADS1115:
     def __init__(self, i2c, address=0x48, gain=1):
@@ -133,6 +145,7 @@ class ADS1115:
         self.address = address
         self.gain = gain
         self.temp2 = bytearray(2)
+        self._lock = asyncio.Lock()
 
     def _write_register(self, register, value):
         self.temp2[0] = value >> 8
@@ -166,19 +179,23 @@ class ADS1115:
         res = self._read_register(_REGISTER_CONVERT)
         return res if res < 32768 else res - 65536
 
-    async def aioread(self, rate=4, channel1=0, channel2=None):
-        """Read voltage between a channel and GND.
-           Time depends on conversion rate. Uses cooperative sleeping
-           (asyncio)."""
-        self._write_register(_REGISTER_CONFIG, (_CQUE_NONE | _CLAT_NONLAT |
-                             _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] |
-                             _MODE_SINGLE | _OS_SINGLE | _GAINS[self.gain] |
-                             _CHANNELS[(channel1, channel2)]))
-        while not self._read_register(_REGISTER_CONFIG) & _OS_NOTBUSY:
-            await asyncio.sleep_ms(1)
-        res = self._read_register(_REGISTER_CONVERT)
-        return res if res < 32768 else res - 65536
+    async def aioread(self, rate=4, channel1=0, channel2=None, delays=_CONVERSION_DELAYS):
+        """Read voltage between a channel and GND or any pair.
+           Non-Blocking approach based on cooperative sleep."""
+        async with self._lock:
+            # with exclusive access to ADC hardware, because it only supports one conversion at a time
+            self._write_register(_REGISTER_CONFIG, (_CQUE_NONE | _CLAT_NONLAT |
+                                 _CPOL_ACTVLOW | _CMODE_TRAD | _RATES[rate] |
+                                 _MODE_SINGLE | _OS_SINGLE | _GAINS[self.gain] |
+                                 _CHANNELS[(channel1, channel2)]))
 
+            # delay from data-sheet + 1 ms margin
+            base_delay = delays[rate] if rate < len(delays) else delays[4]
+            await asyncio.sleep_ms(int(base_delay + 1))
+
+            res = self._read_register(_REGISTER_CONVERT)
+            return res if res < 32768 else res - 65536
+    
     def read_rev(self):
         """Read voltage between a channel and GND. and then start
            the next conversion."""
@@ -248,6 +265,18 @@ class ADS1114(ADS1115):
 
 
 class ADS1015(ADS1115):
+
+_CONVERSION_DELAYS_ADS1015 = (
+        7.81, # 128 SPS
+        4.0,  # 250 SPS
+        2.04, # 490 SPS
+        1.09, # 920 SPS
+        0.625,# 1600 SPS
+        0.4,  # 2400 SPS
+        0.3,  # 3300 SPS
+        1.16  # 860 SPS
+    )
+
     def __init__(self, i2c, address=0x48, gain=1):
         super().__init__(i2c, address, gain)
 
@@ -256,6 +285,10 @@ class ADS1015(ADS1115):
 
     def read(self, rate=4, channel1=0, channel2=None):
         return super().read(rate, channel1, channel2) >> 4
+
+    async def aioread(self, rate=4, channel1=0, channel2=None):
+        res = await super().aioread(rate, channel1, channel2, delays=self._CONVERSION_DELAYS_ADS1015)
+        return res >> 4    
 
     def alert_start(self, rate=4, channel1=0, channel2=None, threshold_high=0x400,
         threshold_low=0, latched=False):
