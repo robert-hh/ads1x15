@@ -265,8 +265,7 @@ class ADS1114(ADS1115):
 
 
 class ADS1015(ADS1115):
-
-_CONVERSION_DELAYS_ADS1015 = (
+    _CONVERSION_DELAYS_ADS1015 = (
         7.81, # 128 SPS
         4.0,  # 250 SPS
         2.04, # 490 SPS
