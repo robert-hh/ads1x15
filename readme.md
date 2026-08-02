@@ -1,4 +1,4 @@
-﻿# Driver for the ADS1015/ADS1115 Analogue-Digital Converter
+# Driver for the ADS1015/ADS1115 Analogue-Digital Converter
 
 This driver consists mostly of the work of Radomir Dopieralski (@deshipu).
 I added a few functions and changed the existing ones so it matches better
@@ -78,11 +78,11 @@ The data sheet figures of the ads1x15 are given for the slowest sample rate.
 The value returned is a signed integer of the raw ADC value. That value can be converted to a voltage with the method raw_to_v().
 
 ### adc.aioread()
-```
+```python
 value = await adc.aioread([rate, [channel1[, channel2]]])
 ```
 
-Similar to `adc.read()`, but will yield the CPU between each check for the result being ready.
+Similar to `adc.read()`, but non-blocking. It uses an `asyncio.Lock` to serialize concurrent requests, starts the conversion, and cooperatively sleeps (`await asyncio.sleep_ms`) for the duration of the conversion delay (based on the sample rate) before reading the result.
 
 ###  adc.set_conv and adc.read_rev()
 
