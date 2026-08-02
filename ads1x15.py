@@ -126,7 +126,7 @@ _RATES = (
     _DR_860SPS    # - /860 samples per Second
 )
 
-# Exakte Wartezeiten in ms für den ADS1115 basierend auf der Rate
+# Exact conversion delays in ms for the ADS1115 based on the sample rate
 _CONVERSION_DELAYS = (
         125,  # 8 SPS
         62.5, # 16 SPS
