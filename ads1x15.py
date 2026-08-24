@@ -197,56 +197,32 @@ class ADS1115:
         res = self._read_register(_REGISTER_CONVERT)
         return res if res < 32768 else res - 65536
 
+try:
+    from ads1015 import ADS1015
+except ImportError:
+    class ADS1015:
+        def __init__(self, *args, **kwargs):
+            raise ImportError("ADS1015 requires 'ads1015.py' on the device.")
 
-class ADS1113(ADS1115):
-    def __init__(self, i2c, address=0x48):
-        super().__init__(i2c, address, 1)
+try:
+    from ads1113 import ADS1113
+except ImportError:
+    class ADS1113:
+        def __init__(self, *args, **kwargs):
+            raise ImportError("ADS1113 requires 'ads1113.py' on the device.")
 
-    def raw_to_v(self, raw):
-        return super().raw_to_v(raw)
+try:
+    from ads1114 import ADS1114
+except ImportError:
+    class ADS1114:
+        def __init__(self, *args, **kwargs):
+            raise ImportError("ADS1114 requires 'ads1114.py' on the device.")
 
-    def read(self, rate=4):
-        return super().read(rate, 0, 1)
-
-    def alert_start(self, rate=4, threshold_high=0x4000, threshold_low=0, latched=False):
-        return super().alert_start(rate, 0, 1, threshold_high, threshold_low, latched)
-
-    def alert_read(self):
-        return super().alert_read()
-
-
-class ADS1114(ADS1115):
-    def __init__(self, i2c, address=0x48, gain=1):
-        super().__init__(i2c, address, gain)
-
-    def raw_to_v(self, raw):
-        return super().raw_to_v(raw)
-
-    def read(self, rate=4):
-        return super().read(rate, 0, 1)
-
-    def alert_start(self, rate=4, threshold_high=0x4000, threshold_low=0, latched=False):
-        return super().alert_start(rate, 0, 1, threshold_high,
-            threshold_low, latched)
-
-    def alert_read(self):
-        return super().alert_read()
+try:
+    from ads1115_async import ADS1115Async
+except ImportError:
+    class ADS1115Async:
+        def __init__(self, *args, **kwargs):
+            raise ImportError("ADS1115Async requires 'ads1115_async.py' on the device.")
 
 
-class ADS1015(ADS1115):
-    def __init__(self, i2c, address=0x48, gain=1):
-        super().__init__(i2c, address, gain)
-
-    def raw_to_v(self, raw):
-        return super().raw_to_v(raw << 4)
-
-    def read(self, rate=4, channel1=0, channel2=None):
-        return super().read(rate, channel1, channel2) >> 4
-
-    def alert_start(self, rate=4, channel1=0, channel2=None, threshold_high=0x400,
-        threshold_low=0, latched=False):
-        return super().alert_start(rate, channel1, channel2, threshold_high << 4,
-            threshold_low << 4, latched)
-
-    def alert_read(self):
-        return super().alert_read() >> 4
